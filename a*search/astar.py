@@ -67,7 +67,7 @@ def main():
     path, cost = graph.a_star_search('a', 'z')
 
     if path:
-        print(f" ath: {' -> '.join(path)} with cost: {cost}")
+        print(f"Path: {' -> '.join(path)} with cost: {cost}")
     else:
         print("No path found")
 
