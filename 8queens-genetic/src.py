@@ -1,6 +1,6 @@
 import random
 
-MAX_GENERATIONS = 10000
+MAX_GENERATIONS = 6000
 POPULATION_SIZE = 45
 MUTATION_CHANCE = 0.3
 BOARD_LEN = 8
@@ -17,8 +17,11 @@ def generate_initial_population():
 
 
 def print_board(board):
+    print("\n", board, "\n")
     for row in board:
-        print(row)
+        print(row * ". ", end="")
+        print("Q ", end="")
+        print((BOARD_LEN - row - 1) * ". ")
 
 
 def evaluate_badness(board):
@@ -72,7 +75,7 @@ def mutate(board):
 
 
 def genetic_algorithm(population):
-    for gen in range(MAX_GENERATIONS):
+    for generation in range(MAX_GENERATIONS):
         badnesses = [evaluate_badness(board) for board in population]
 
         best_score = min(badnesses)
@@ -80,8 +83,7 @@ def genetic_algorithm(population):
 
         # if we solved it, return
         if best_score == 0:
-            print("Solution found in:", gen, "generations.")
-            return population[best_index]
+            return (generation, population[best_index])
 
         # keep best sample
         new_population = [population[best_index]]
@@ -94,15 +96,17 @@ def genetic_algorithm(population):
 
         # update pop for next generation
         population = new_population
-    return []
+    return (MAX_GENERATIONS, [])
 
 
 def main():
     pop = generate_initial_population()
-    board = genetic_algorithm(pop)
+    generation_count, board = genetic_algorithm(pop)
+
     if not board:
         print("Solution could not be found in", MAX_GENERATIONS, "generations")
     else:
+        print("Solution found in", generation_count, "generations.")
         print_board(board)
 
 
