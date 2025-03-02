@@ -1,4 +1,5 @@
 import numpy as np
+from tabulate import tabulate
 from collections import Counter
 from enum import Enum
 
@@ -154,14 +155,20 @@ clf = DecisionTree(3)
 clf.train(X, y)
 
 # Predict all possible combinations of inputs
-print(f"{'Age':<12} {'Income':<9} {'Prior Purchase':<15} {'Prediction'}")
-print("=" * 49)
+predictions = []
 
 for age in Age:
     for income in Income:
         for prior_purchase in PriorPurchase:
             features = [age.value, income.value, prior_purchase.value]
             prediction = clf.predict(features)
-            print(
-                f"{age.name:<12} {income.name:<9} {prior_purchase.name:<15} {prediction}"
-            )
+            predictions.append([age.name, income.name, prior_purchase.name, prediction])
+
+# Print table
+print(
+    tabulate(
+        predictions,
+        headers=["Age", "Income", "Prior Purchase", "Prediction"],
+        tablefmt="rounded_outline",
+    )
+)
