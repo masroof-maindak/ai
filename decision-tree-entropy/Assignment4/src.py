@@ -154,7 +154,7 @@ class DecisionTree:
 clf = DecisionTree(3)
 clf.train(X, y)
 
-# Predict all possible combinations of inputs
+# Test all possible combinations of inputs
 predictions = []
 
 for age in Age:
@@ -164,7 +164,6 @@ for age in Age:
             prediction = clf.predict(features)
             predictions.append([age.name, income.name, prior_purchase.name, prediction])
 
-# Print table
 print(
     tabulate(
         predictions,
