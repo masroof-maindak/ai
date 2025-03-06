@@ -33,13 +33,11 @@ fn ordinary_least_squares(dataset: &Vec<Point>) -> (f64, f64) {
 }
 
 fn compute_mean_squared_error(dataset: &Vec<Point>, best_fit_slope: f64, intercept: f64) -> f64 {
-    let mean_squared_error = dataset
+    dataset
         .iter()
         .map(|e| (e.y - (best_fit_slope * e.x + intercept)).powi(2))
         .sum::<f64>()
-        / dataset.len() as f64;
-
-    mean_squared_error
+        / dataset.len() as f64
 }
 
 fn get_min_max(dataset: &Vec<Point>) -> (f64, f64, f64, f64) {
