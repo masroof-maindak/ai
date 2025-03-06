@@ -24,7 +24,7 @@ fn ordinary_least_squares(dataset: &Vec<Point>) -> (f64, f64) {
         .sum::<f64>();
 
     // Sum{ (x - x_mean)^2 }
-    let denominator = x_vec.iter().map(|val| (val - x_mean).powi(2)).sum::<f64>();
+    let denominator = x_vec.iter().map(|x| (x - x_mean).powi(2)).sum::<f64>();
 
     let best_fit_slope = numerator / denominator;
     let intercept = y_mean - (best_fit_slope * x_mean);
