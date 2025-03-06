@@ -1,0 +1,3 @@
+[submodule "s4ge"]
+	path = s4ge
+	url = https://github.com/masroof-maindak/s4ge.git
