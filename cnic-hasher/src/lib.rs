@@ -1,4 +1,4 @@
-const DEFAULT_CAPACITY: usize = 64;
+const DEFAULT_CAPACITY: usize = 8;
 const CNIC_LENGTH: usize = 13;
 const LOAD_FACTOR: f64 = 0.6;
 const ZERO_ASCII_VALUE: u8 = 0x30;
@@ -11,7 +11,7 @@ pub struct CnicHashmap {
 
 impl Default for CnicHashmap {
     fn default() -> Self {
-        CnicHashmap {
+        Self {
             len: 0,
             cap: DEFAULT_CAPACITY,
             arr: vec![None; DEFAULT_CAPACITY],
@@ -20,7 +20,15 @@ impl Default for CnicHashmap {
 }
 
 impl CnicHashmap {
-    pub fn push(&mut self, s: &String) -> i64 {
+    pub fn new() -> Self {
+        Self {
+            len: 0,
+            cap: DEFAULT_CAPACITY,
+            arr: vec![None; DEFAULT_CAPACITY],
+        }
+    }
+
+    pub fn push(&mut self, s: &str) -> i64 {
         if !validate_cnic(s) {
             return -1;
         }
@@ -35,7 +43,7 @@ impl CnicHashmap {
         return push_to_map(&mut self.arr, s).try_into().unwrap();
     }
 
-    pub fn remove(&mut self, s: &String) -> bool {
+    pub fn remove(&mut self, s: &str) -> bool {
         if !validate_cnic(s) {
             return false;
         }
@@ -67,22 +75,23 @@ impl CnicHashmap {
     fn expand_arr(&mut self) {
         self.cap *= 2;
         let mut new_vec: Vec<Option<String>> = vec![None; self.cap];
+
         self.arr.iter().flatten().for_each(|s| {
             push_to_map(&mut new_vec, &s);
         });
+
         self.arr = new_vec;
     }
 }
 
-fn hash(s: &String) -> usize {
+fn hash(s: &str) -> usize {
     let middle: usize = s[5..11].parse().unwrap();
     let final_digit: u8 = s.as_bytes()[12] - ZERO_ASCII_VALUE;
-
     middle << final_digit
 }
 
 // Calculates hash and inserts key; arr's length is taken to be the capacity.
-fn push_to_map(arr: &mut Vec<Option<String>>, s: &String) -> usize {
+fn push_to_map(arr: &mut Vec<Option<String>>, s: &str) -> usize {
     let mut idx: usize = hash(s) % arr.capacity();
 
     while arr[idx].is_some() {
@@ -92,20 +101,12 @@ fn push_to_map(arr: &mut Vec<Option<String>>, s: &String) -> usize {
         }
     }
 
-    arr[idx] = Some(s).cloned();
+    arr[idx] = Some(s.to_owned());
     idx
 }
 
-fn validate_cnic(s: &String) -> bool {
-    if !s.starts_with("35202") || s.len() != CNIC_LENGTH {
-        return false;
-    }
-
-    for c in s[5..].chars() {
-        if c.to_digit(10).is_none() {
-            return false;
-        }
-    }
-
-    true
+fn validate_cnic(s: &str) -> bool {
+    s.starts_with("35202")
+        && s.len() == CNIC_LENGTH
+        && s[5..].chars().all(|c| c.to_digit(10).is_some())
 }
