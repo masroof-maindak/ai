@@ -2,7 +2,7 @@ use csv::ReaderBuilder;
 use plotters::prelude::*;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(tag = "type")]
 struct Point {
     #[serde(rename = "X1")]
@@ -10,7 +10,7 @@ struct Point {
     y: f64,
 }
 
-fn ordinary_least_squares(dataset: &Vec<Point>) -> (f64, f64) {
+fn compute_regression_coefficients(dataset: &Vec<Point>) -> (f64, f64) {
     let x_vec: Vec<f64> = dataset.iter().map(|e| e.x).collect();
     let y_vec: Vec<f64> = dataset.iter().map(|e| e.y).collect();
 
@@ -40,6 +40,28 @@ fn compute_mean_squared_error(dataset: &Vec<Point>, best_fit_slope: f64, interce
         / dataset.len() as f64
 }
 
+fn normalize_features(dataset: &mut Vec<Point>) {
+    let (x_min, x_max, _, _) = get_min_max(&dataset);
+    for e in dataset.iter_mut() {
+        e.x = ((e.x - x_min) / (x_max - x_min)) as f64;
+    }
+}
+
+fn split_dataset(
+    dataset: &Vec<Point>,
+    split_perc: f32,
+) -> Result<(Vec<Point>, Vec<Point>, usize), &'static str> {
+    if split_perc < 0.0 || split_perc > 1.0 {
+        return Err("invalid split percentage".into());
+    }
+
+    let cutoff_idx = (split_perc * dataset.len() as f32) as usize;
+
+    let train_set = dataset.iter().take(cutoff_idx).map(|e| e.clone()).collect();
+    let test_set = dataset.iter().skip(cutoff_idx).map(|e| e.clone()).collect();
+    Ok((train_set, test_set, cutoff_idx))
+}
+
 fn get_min_max(dataset: &Vec<Point>) -> (f64, f64, f64, f64) {
     let mut x_min = dataset[0].x;
     let mut x_max = dataset[0].x;
@@ -66,16 +88,20 @@ fn get_min_max(dataset: &Vec<Point>) -> (f64, f64, f64, f64) {
 
 fn plot_regression_and_points(
     dataset: &Vec<Point>,
+    cutoff_idx: usize,
     line: f64,
     intercept: f64,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let (x_min, x_max, y_min, y_max) = get_min_max(dataset);
+
     let root = BitMapBackend::new("output.png", (1600, 1200)).into_drawing_area();
     root.fill(&WHITE)?;
 
-    let (x_min, x_max, y_min, y_max) = get_min_max(dataset);
-
     let mut chart = ChartBuilder::on(&root)
-        .caption("Linear Regression", ("IBM Plex Sans", 48).into_font())
+        .caption(
+            "Linear Regression w/ Min-Max Scaling",
+            ("IBM Plex Sans", 48).into_font(),
+        )
         .margin(10)
         .x_label_area_size(30)
         .y_label_area_size(30)
@@ -83,11 +109,13 @@ fn plot_regression_and_points(
 
     chart.configure_mesh().draw()?;
 
-    chart.draw_series(
-        dataset
-            .iter()
-            .map(|p| Circle::new((p.x, p.y), 3, BLUE.filled())),
-    )?;
+    chart.draw_series(dataset.iter().enumerate().map(|(i, p)| {
+        if i < cutoff_idx {
+            Circle::new((p.x, p.y), 3, BLUE.filled())
+        } else {
+            Circle::new((p.x, p.y), 3, YELLOW.filled())
+        }
+    }))?;
 
     let regression_line = vec![
         (x_min, line * x_min + intercept),
@@ -101,20 +129,24 @@ fn plot_regression_and_points(
     Ok(())
 }
 
-fn main() -> Result<(), csv::Error> {
-    // Load CSV file
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut reader = ReaderBuilder::new()
         .has_headers(true)
-        .from_path("./dataset.csv")?;
+        .from_path("./dataset01.csv")?;
 
-    // Deserialize to vector
     let mut dataset: Vec<Point> = Vec::with_capacity(1000);
     dataset.extend(reader.deserialize().flatten());
 
-    let (b, c) = ordinary_least_squares(&dataset);
-    let mse = compute_mean_squared_error(&dataset, b, c);
+    let split_perc = 0.8;
 
-    if let Err(e) = plot_regression_and_points(&dataset, b, c) {
+    // Normalize & Split
+    normalize_features(&mut dataset);
+    let (train_set, test_set, cutoff_idx) = split_dataset(&dataset, split_perc)?;
+
+    let (m, c) = compute_regression_coefficients(&train_set);
+    let mse = compute_mean_squared_error(&test_set, m, c);
+
+    if let Err(e) = plot_regression_and_points(&dataset, cutoff_idx, m, c) {
         eprintln!("Error while plotting data: {e}");
     } else {
         println!("Plot saved as output.png");
