@@ -145,13 +145,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (m, c) = compute_regression_coefficients(&train_set);
     let mse = compute_mean_squared_error(&test_set, m, c);
+    plot_regression_and_points(&dataset, cutoff_idx, m, c)?;
 
-    if let Err(e) = plot_regression_and_points(&dataset, cutoff_idx, m, c) {
-        eprintln!("Error while plotting data: {e}");
-    } else {
-        println!("Plot saved as output.png");
-    }
-
+    println!("Plot saved as output.png");
     println!("Mean Squared Error: {mse}");
     Ok(())
 }
