@@ -78,8 +78,7 @@ def genetic_algorithm(population):
     for generation in range(MAX_GENERATIONS):
         badnesses = [evaluate_badness(board) for board in population]
 
-        best_score = min(badnesses)
-        best_index = badnesses.index(best_score)
+        best_index, best_score = min(enumerate(badnesses), key=lambda x: x[1])
 
         # if we solved it, return
         if best_score == 0:
