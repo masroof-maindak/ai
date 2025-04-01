@@ -69,19 +69,52 @@ class NeuralNetwork:
     def back_propagation(self, X, y, learning_rate):
         m = X.shape[0]  # NUM_SAMPLES
 
-        # Output layer error
-        # dZ2 =  # Hint: Derivative of binary cross-entropy loss (error at the output layer)
-        # dW2 =  # Hint: Use np.dot with proper dimensions (for output layer)
-        # db2 =  # Hint: Sum along axis 0 (for output layer)
+        # Any layer's output is defined by three things. The prior layer's
+        # activations, the weights of this layer, and the biases of this layer.
+        # The idea is that we want to see *how* tweaks to either of those things
+        # would affect the end goal of the cost function. This is why we start
+        # from the end and 'propagate' back; the part regarding the 'activations
+        # of the previous layer' lends itself quite naturally to this recursion
 
-        # Hidden layer error (ReLU derivative is 1 where z1 > 0)
-        # dZ1 =
-        # dW1 =
-        # db1 =
+        # In our case, we don't need a recursive function for a mere two layers.
+
+        # Chain rule in action...
+
+        # activations of prior layer
+        d_z2_wrt_W2 = self.A1
+
+        # derivative of activation function
+        d_a2_wrt_z2 = actvns.sigmoid(self.z2, derivative=True)
+
+        # derivative of loss/cost w.r.t activations
+        d_loss_wrt_a2 = loss_fns.bce(self.a2, y, derivative=True)
+
+        # Thus, we are ultimately left with the derivative of the loss with
+        # respect to the weights... i.e how sensitive this cost function is
+        # to the weights
+        print(d_loss_wrt_a2.shape)
+        print(d_a2_wrt_z2.shape)
+        print(d_z2_wrt_W2.shape)
+        d_loss_wrt_W2 = d_loss_wrt_a2 @ d_a2_wrt_z2 @ d_z2_wrt_W2
+
+        # Next, we must similarly measure how sensitive the cost/loss function
+        # is w.r.t the biases. We're more or less done though, because only one
+        # of the three required partial derivatives is new to us. Namely:
+        d_z2_wrt_b2 = 1
+        d_loss_wrt_b2 = d_loss_wrt_a2 @ d_a2_wrt_z2 @ d_z2_wrt_b2
+
+        # Lastly, we must similarly measure how sensitive the cost/loss function
+        # is w.r.t the activations of the previous layer.
+        d_z2_wrt_a1 = self.z2
+        d_loss_wrt_b2 = d_loss_wrt_a2 @ d_a2_wrt_z2 @ d_z2_wrt_a1
+
+        # Now, we can simply iterate this idea backwards to see how sensitive the cost/loss
+        # function is to previous weights and biases
 
         # Update weights and biases
         # self.W1 -=
         # self.b1 -=
+
         # self.W2 -=
         # self.b2 -=
 
