@@ -64,7 +64,9 @@ class NeuralNetwork:
 
         return self.a2
 
-    def backward_propagation(self, X, y, learning_rate):
+    # https://youtu.be/YG15m2VwSjA?feature=shared
+    # https://youtu.be/tIeHLnjs5U8?feature=shared
+    def back_propagation(self, X, y, learning_rate):
         m = X.shape[0]  # NUM_SAMPLES
 
         # Output layer error
@@ -82,6 +84,7 @@ class NeuralNetwork:
         # self.b1 -=
         # self.W2 -=
         # self.b2 -=
+
         return X, y, learning_rate
 
     # param X array of training samples ; shape -> (NUM_SAMPLES, 8)
@@ -92,7 +95,7 @@ class NeuralNetwork:
             # NOTE: flatten() is used to convert the 2D array (column vector) into a 1D array
             # Failing to do so results in an absurdly inflated loss value for some reason
             loss = loss_fns.bce(y_pred, y)
-            self.backward_propagation(X, y, learning_rate)
+            self.back_propagation(X, y, learning_rate)
             if epoch % 10 == 0:
                 print(f"Epoch {epoch}, Loss: {loss:.4f}")
 

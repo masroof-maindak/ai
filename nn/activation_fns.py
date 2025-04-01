@@ -5,5 +5,7 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))  # f(x) = 1 / 1 + e^-x
 
 
-def relu(x):
+def relu(x, derivative=False):
+    if derivative:
+        return None
     return np.maximum(0, x)  # max(0, x)
