@@ -1,1 +1,0 @@
-Dead simple neural network library in Python, from scratch, with hardcoded layers and activation functions.
