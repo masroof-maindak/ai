@@ -106,17 +106,17 @@ class NeuralNetwork:
         # Lastly, we must similarly measure how sensitive the cost/loss function
         # is w.r.t the activations of the previous layer.
         d_z2_wrt_a1 = self.z2
-        d_loss_wrt_b2 = d_loss_wrt_a2 @ d_a2_wrt_z2 @ d_z2_wrt_a1
+        d_loss_wrt_a1 = d_loss_wrt_a2 @ d_a2_wrt_z2 @ d_z2_wrt_a1
 
         # Now, we can simply iterate this idea backwards to see how sensitive the cost/loss
         # function is to previous weights and biases
 
         # Update weights and biases
-        # self.W1 -=
-        # self.b1 -=
+        self.W1 -= learning_rate * d_loss_wrt_W2
+        self.b1 -= learning_rate * d_loss_wrt_b2
 
-        # self.W2 -=
-        # self.b2 -=
+        # self.W2 -= learning_rate *
+        # self.b2 -= learning_rate *
 
         return X, y, learning_rate
 
