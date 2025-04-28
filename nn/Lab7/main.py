@@ -41,6 +41,8 @@ OUTPUT_SIZE = 1
 
 class NeuralNetwork:
     def __init__(self):
+        np.random.seed(1)
+
         # Input layer (8 features) →  Hidden layer (4 neurons)
         self.W1 = np.random.randn(INPUT_SIZE, HIDDEN_SIZE)
         self.b1 = np.ones((1, HIDDEN_SIZE))
@@ -97,9 +99,14 @@ class NeuralNetwork:
         # activations of prior layer (transposed) -> 4 x NUM_SAMPLES
         d_z2_W2 = self.A1.T
 
-        tmp = (self.a2.flatten() - y_real).reshape(-1, 1)
-        common1 = tmp * actvns.sigmoid(self.a2, derivative=True)
-        # common1 = d_loss_a2 * d_a2_z2
+        """
+        NOTE: uncomment out the two lines below and comment the line below them
+        to instead get an elegant evaluation of the BCE loss' derivative specifically
+        when it is applied in tandem with 
+        """
+        # tmp = (self.a2.flatten() - y_real).reshape(-1, 1)
+        # common1 = tmp * actvns.sigmoid(self.a2, derivative=True)
+        common1 = d_loss_a2 * d_a2_z2
 
         # How sensitive the cost function is with respect to the weights/biases
         d_loss_W2 = (d_z2_W2 @ common1) / m
