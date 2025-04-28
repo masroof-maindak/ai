@@ -106,10 +106,10 @@ class NeuralNetwork:
         """
         # tmp = (self.a2.flatten() - y_real).reshape(-1, 1)
         # common1 = tmp * actvns.sigmoid(self.a2, derivative=True)
-        common1 = d_loss_a2 * d_a2_z2
+        delta2 = d_loss_a2 * d_a2_z2
 
         # How sensitive the cost function is with respect to the weights/biases
-        d_loss_W2 = (d_z2_W2 @ common1) / m
+        d_loss_W2 = (d_z2_W2 @ delta2) / m
 
         """
         the 'third component' being multiplied with the intermediary in this case
@@ -118,19 +118,19 @@ class NeuralNetwork:
         This is because of the derivation of zL with respect to bL is always 1.
         """
 
-        d_loss_b2 = np.sum(common1, axis=0, keepdims=True) / m
+        d_loss_b2 = np.sum(delta2, axis=0, keepdims=True) / m
 
         # --- HIDDEN LAYER ---
 
         # Chain rule
-        d_loss_a1 = common1 @ self.W2.T  # CHECK: what's going on here?
+        d_loss_a1 = delta2 @ self.W2.T  # CHECK: what's going on here?
         d_a1_z1 = actvns.relu(self.Z1, derivative=True)
         d_z1_W1 = X.T
 
-        common2 = d_loss_a1 * d_a1_z1
+        delta1 = d_loss_a1 * d_a1_z1
 
-        d_loss_W1 = (d_z1_W1 @ common2) / m
-        d_loss_b1 = np.sum(common2, axis=0, keepdims=True) / m
+        d_loss_W1 = (d_z1_W1 @ delta1) / m
+        d_loss_b1 = np.sum(delta1, axis=0, keepdims=True) / m
 
         # Update weights and biases
         self.W2 -= alpha * d_loss_W2

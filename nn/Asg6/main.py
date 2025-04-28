@@ -67,19 +67,19 @@ class NeuralNetwork:
 
         d_z2_W2 = self.A1.T
 
-        common1 = d_loss_a2 * d_a2_z2
+        delta2 = d_loss_a2 * d_a2_z2
 
-        d_loss_W2 = (d_z2_W2 @ common1) / m
-        d_loss_b2 = np.sum(common1, axis=0, keepdims=True) / m
+        d_loss_W2 = (d_z2_W2 @ delta2) / m
+        d_loss_b2 = np.sum(delta2, axis=0, keepdims=True) / m
 
-        d_loss_a1 = common1 @ self.W2.T  # CHECK: what's going on here?
+        d_loss_a1 = delta2 @ self.W2.T
         d_a1_z1 = relu(self.Z1, derivative=True)
         d_z1_W1 = X.T
 
-        common2 = d_loss_a1 * d_a1_z1
+        delta1 = d_loss_a1 * d_a1_z1
 
-        d_loss_W1 = (d_z1_W1 @ common2) / m
-        d_loss_b1 = np.sum(common2, axis=0, keepdims=True) / m
+        d_loss_W1 = (d_z1_W1 @ delta1) / m
+        d_loss_b1 = np.sum(delta1, axis=0, keepdims=True) / m
 
         self.W2 -= alpha * d_loss_W2
         self.b2 -= alpha * d_loss_b2
@@ -89,11 +89,6 @@ class NeuralNetwork:
     def train(self, X, y_real, epochs, alpha):
         for epoch in range(epochs + 1):
             y_pred = self._forward_pass(X).flatten()
-
-            """
-            NOTE: flatten() is used to convert the 2D array
-            i.e of outputs(column vector) into a 1D array
-            """
 
             loss = mse(y_pred, y_real)
             self._back_propagation(X, y_real, alpha)
