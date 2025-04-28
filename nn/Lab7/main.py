@@ -102,7 +102,7 @@ class NeuralNetwork:
         """
         NOTE: uncomment out the two lines below and comment the line below them
         to instead get an elegant evaluation of the BCE loss' derivative specifically
-        when it is applied in tandem with 
+        when it is applied in tandem with the derivative of the sigmoid activation fn.
         """
         # tmp = (self.a2.flatten() - y_real).reshape(-1, 1)
         # common1 = tmp * actvns.sigmoid(self.a2, derivative=True)
