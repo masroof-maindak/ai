@@ -87,7 +87,7 @@ class NeuralNetwork:
         # --- OUTPUT LAYER ---
 
         # derivative of loss function i.e cost w.r.t activations of final layer
-        d_loss_a2 = loss_fns.mse_deriv(self.a2.flatten(), y_real).reshape(
+        d_loss_a2 = loss_fns.bce_deriv(self.a2.flatten(), y_real).reshape(
             -1, 1  # convert the response from a list back to a column vector
         )
 
@@ -97,7 +97,9 @@ class NeuralNetwork:
         # activations of prior layer (transposed) -> 4 x NUM_SAMPLES
         d_z2_W2 = self.A1.T
 
-        common1 = d_loss_a2 * d_a2_z2
+        tmp = (self.a2.flatten() - y_real).reshape(-1, 1)
+        common1 = tmp * actvns.sigmoid(self.a2, derivative=True)
+        # common1 = d_loss_a2 * d_a2_z2
 
         # How sensitive the cost function is with respect to the weights/biases
         d_loss_W2 = (d_z2_W2 @ common1) / m
@@ -114,7 +116,7 @@ class NeuralNetwork:
         # --- HIDDEN LAYER ---
 
         # Chain rule
-        d_loss_a1 = common1 @ self.W2.T  # CHECK: how the fuck does this work?
+        d_loss_a1 = common1 @ self.W2.T  # CHECK: what's going on here?
         d_a1_z1 = actvns.relu(self.Z1, derivative=True)
         d_z1_W1 = X.T
 
@@ -140,12 +142,13 @@ class NeuralNetwork:
             i.e of outputs(column vector) into a 1D array
             """
 
-            loss = loss_fns.mse(y_pred, y_real)
+            loss = loss_fns.bce(y_pred, y_real)
             self._back_propagation(X, y_real, alpha)
             if epoch % 200 == 0:
                 print(f"Epoch {epoch}, Loss: {loss:.4f}")
 
     # param X array of testing samples ; shape -> (NUM_SAMPLES, 8)
+    # returns a c olumn vector of 1s or 0s denoting binary classification
     def predict(self, X, threshold=0.5):
         y_pred = self._forward_pass(X)
         return np.where(y_pred > threshold, 1, 0)
