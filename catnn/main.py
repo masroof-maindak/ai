@@ -22,6 +22,8 @@ def batch_flatten_images(data_list: list[tuple[str, str]]):
 
     num_samples = len(data_list)
     feature_dim = TARGET_H * TARGET_W * 3
+    loop_modulus: int = int(num_samples / 6)
+
     X = np.zeros((num_samples, feature_dim), dtype=np.float32)
     y: list[str] = []
 
@@ -31,7 +33,7 @@ def batch_flatten_images(data_list: list[tuple[str, str]]):
         X[i, :] = arr.flatten() / 255.0  # Normalize pixels
         y.append(label)
 
-        if i % 400 == 0:
+        if i % loop_modulus == 0:
             print(f"[ FLATTENING ] Processed {i}/{num_samples} images")
 
     print(f"[ FLATTENING ] Completed successfully.")

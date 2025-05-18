@@ -9,6 +9,7 @@ TRAIN_LIST_PATH = "train_data.json"
 TEST_LIST_PATH = "test_data.json"
 
 SPLIT_RATIO = 0.8  # 80% training, 20% testing
+MAX_IMAGES_PER_CLASS = 130
 
 
 def extract_class_from_filename(filename):
@@ -36,9 +37,12 @@ def split_dataset():
 
     for label, files in class_to_files.items():
         random.shuffle(files)
-        split_idx = int(len(files) * SPLIT_RATIO)
-        train = [(f, label) for f in files[:split_idx]]
-        test = [(f, label) for f in files[split_idx:]]
+
+        capped_files = files[:MAX_IMAGES_PER_CLASS]
+        split_idx = int(MAX_IMAGES_PER_CLASS * SPLIT_RATIO)
+
+        train = [(f, label) for f in capped_files[:split_idx]]
+        test = [(f, label) for f in capped_files[split_idx:]]
 
         train_data.extend(train)
         test_data.extend(test)
