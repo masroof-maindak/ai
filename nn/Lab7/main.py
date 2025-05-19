@@ -105,7 +105,7 @@ class NeuralNetwork:
         when it is applied in tandem with the derivative of the sigmoid activation fn.
         """
         # tmp = (self.a2.flatten() - y_real).reshape(-1, 1)
-        # common1 = tmp * actvns.sigmoid(self.a2, derivative=True)
+        # delta2 = tmp * actvns.sigmoid(self.a2, derivative=True)
         delta2 = d_loss_a2 * d_a2_z2
 
         # How sensitive the cost function is with respect to the weights/biases
