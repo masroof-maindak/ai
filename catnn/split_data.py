@@ -8,8 +8,8 @@ PROCESSED_DIR = "processed_images"
 TRAIN_LIST_PATH = "train_data.json"
 TEST_LIST_PATH = "test_data.json"
 
-SPLIT_RATIO = 0.8  # 80% training, 20% testing
-MAX_IMAGES_PER_CLASS = 130
+SPLIT_RATIO = 0.75
+MAX_IMAGES_PER_CLASS = 100
 
 
 def extract_class_from_filename(filename):
@@ -21,7 +21,7 @@ def split_dataset():
         print("[ SPLITTING ] Data found. Skipping.")
         return
 
-    random.seed(42)  # Reproducibility
+    random.seed(42)
     class_to_files = defaultdict(list)
 
     # Collect all image paths grouped by class
@@ -47,7 +47,6 @@ def split_dataset():
         train_data.extend(train)
         test_data.extend(test)
 
-    # Save to JSON
     with open(TRAIN_LIST_PATH, "w") as f:
         json.dump(train_data, f)
 
