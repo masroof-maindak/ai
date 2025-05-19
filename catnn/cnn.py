@@ -39,8 +39,12 @@ class ShrimpleCNN:
         probs = self.fccn.forward(X)
         return probs
 
-    def backward(self, grad_output, learning_rate: float):
-        pass
+    def backward(self, d_loss_dense_z, learning_rate: float):
+        d_loss_flatten_output = self.fccn.backward(d_loss_dense_z, learning_rate)
+        d_loss_pool_output = self.flatten.backward(d_loss_flatten_output)
+        d_loss_relu_output = self.pool.backward(d_loss_pool_output)
+        d_loss_conv_output = self.relu.backward(d_loss_relu_output)
+        _ = self.conv.backward(d_loss_conv_output, learning_rate)
 
     def train(
         self, X, y: list[str], epochs: int = 1000, learning_rate: float = 0.05
@@ -63,14 +67,20 @@ class ShrimpleCNN:
             y_pred_probs = self.forward(X)
 
             # --- One-Hot Encoding ---
-            # Basically, create an array of classes of as many classes you have
-            # And set the correct class label to be 1, whereas the others are 0.
+
+            # Basically, create an array of size x, where x is the number of classes you have,
+            # and set the correct class label's corresponding index to 1, and the others to 0
             y_one_hot = np.zeros((N, num_classes))
             y_one_hot[np.arange(N), y_indices] = 1
 
             loss = cross_entropy_loss(y_one_hot, y_pred_probs)
 
-            # TODO: backprop
+            # --- Backpropagation ---
+
+            # Elegant evaluation of dL/dZ when Softmax is used w/ Cross-Entropy Loss
+            d_loss_dense_z = (y_pred_probs - y_one_hot) / N
+
+            self.backward(d_loss_dense_z, learning_rate)
 
             return
             if epoch % 10 == 0:

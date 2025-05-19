@@ -15,6 +15,7 @@ class Conv2D:
         self.kernels = (
             np.random.randn(kernel_size, kernel_size, in_channels, out_channels) * 0.01
         )
+        self.d_loss_kernels: np.ndarray = np.zeros_like(self.kernels)
 
         self.stride = 1
 
@@ -45,7 +46,7 @@ class Conv2D:
         output = np.zeros((N, out_rows, out_cols, self.out_channels))
 
         for i in range(N):
-            print("[ CONV2D FORWARD ] image #", i)
+            # print("[ CONV2D FORWARD ] image #", i)
             for c in range(self.out_channels):
                 kernel = self.kernels[:, :, :, c]  # Shape: K, K, C_in
 
@@ -62,16 +63,80 @@ class Conv2D:
 
         return output
 
+    def backward(
+        self, d_loss_conv_output: np.ndarray, learning_rate: float
+    ) -> np.ndarray:
+        """
+        Performs the backward pass for the Conv2D layer.
+        Updates kernel weights and computes the derivative of the loss w.r.t. the input.
+
+        Parameters:
+            d_loss_conv_output: Derivative of the loss w.r.t. the output of this Conv layer.
+                                Shape: (N, H_out, W_out, C_out)
+            learning_rate: Learning rate for parameter updates.
+
+        Returns:
+            d_loss_conv_input: Derivative of the loss w.r.t. the input of this Conv layer.
+                               Shape: (N, H_in, W_in, C_in)
+        """
+        N, H_in, W_in, _ = self.input.shape
+        _, out_rows, out_cols, _ = d_loss_conv_output.shape
+
+        d_loss_conv_input = np.zeros_like(self.input)
+        new_d_loss_kernels = np.zeros_like(self.kernels)
+
+        for i in range(N):
+            for c in range(self.out_channels):
+                for row in range(out_rows):
+                    start_row = row * self.stride
+                    end_row = start_row + self.kernel_size
+
+                    for col in range(out_cols):
+                        start_col = col * self.stride
+                        end_col = start_col + self.kernel_size
+
+                        patch = self.input[i, start_row:end_row, start_col:end_col, :]
+
+                        d_loss_conv_out_single = d_loss_conv_output[i, row, col, c]
+
+                        # What do we want to find?
+                        # How much a specific kernel contributed to a specific output element (pixel)
+
+                        # Intuition: K_ij was multiplied by a corresponding patch from the input P_ij
+                        # Thus, the 'influence' of K_ij on said element is proportional to that of P_ij
+                        new_d_loss_kernels[:, :, :, c] += patch * d_loss_conv_out_single
+
+                        # What do we want to find?
+                        # How much a specific input element contributed to a specific output element.
+
+                        # Intuition: The pixel X_mn, as part of some input patch, was multiplied w/ a corresponding
+                        # kernel weight K_rs. Therefore, just like above, we can claim that the sensitivity of the
+                        # output element w.r.t X_mn is directly proportional to the sensitivity of the element in
+                        # question w.r.t K_rs
+
+                        # As an input pixel X_mn influences multiple elements, it's 'alteration' is the summation of
+                        # 'contributions' from all the output elements it ultimately 'influenced'.
+                        d_loss_conv_input[
+                            i, start_row:end_row, start_col:end_col, :
+                        ] += (self.kernels[:, :, :, c] * d_loss_conv_out_single)
+
+        self.d_loss_kernels = new_d_loss_kernels
+        self.kernels -= learning_rate * self.d_loss_kernels
+        return d_loss_conv_input
+
 
 @final
 class ReLU:
+    def __init__(self):
+        self.input: np.ndarray = np.array([])
+
     def forward(self, x: np.ndarray) -> np.ndarray:
         self.input = x
         return np.maximum(0, x)
 
-    def backward(self, grad_output: np.ndarray) -> np.ndarray:
-        # Gradient is passed through only where input > 0
-        return grad_output * (self.input > 0)
+    def backward(self, d_loss_relu_output: np.ndarray) -> np.ndarray:
+        d_loss_relu_input = d_loss_relu_output * (self.input > 0)
+        return d_loss_relu_input
 
 
 @final
@@ -79,7 +144,6 @@ class MaxPool2D:
     def __init__(self, size: int = 2, stride: int = 2):
         self.size = size
         self.stride = stride
-
         self.input: np.ndarray = np.array([])
 
     def forward(self, x: np.ndarray) -> np.ndarray:
@@ -122,11 +186,43 @@ class MaxPool2D:
 
         return output
 
+    def backward(self, d_loss_maxpool_output: np.ndarray) -> np.ndarray:
+        """
+        Intuition: only alter the value that was selected and propagated forward in the first place,
+        i.e the maximum, because only it could affect the outcome anyway.
+        """
+        N, _, _, C_in = self.input.shape
+        _, out_rows, out_cols, _ = d_loss_maxpool_output.shape
+
+        pool_h, pool_w = self.size, self.size
+
+        d_loss_maxpool_input = np.zeros_like(self.input)
+
+        for i in range(N):
+            for c in range(C_in):
+                for row in range(out_rows):
+                    start_row = row * self.stride
+                    end_row = start_row + pool_h
+
+                    for col in range(out_cols):
+                        start_col = col * self.stride
+                        end_col = start_col + pool_w
+
+                        patch = self.input[i, start_row:end_row, start_col:end_col, c]
+
+                        max_val = np.max(patch)
+
+                        mask = patch == max_val
+
+                        d_loss_maxpool_input[
+                            i, start_row:end_row, start_col:end_col, c
+                        ] += (mask * d_loss_maxpool_output[i, row, col, c])
+        return d_loss_maxpool_input
+
 
 @final
 class Flatten:
     def __init__(self):
-        # Store the original input shape for the backward pass
         self.input_shape: tuple
 
     def forward(self, x: np.ndarray) -> np.ndarray:
@@ -144,6 +240,13 @@ class Flatten:
         output = x.reshape(x.shape[0], -1)
         return output
 
+    def backward(self, d_loss_flatten_out: np.ndarray) -> np.ndarray:
+        """
+        Basically just reshapes the output to the shape it received
+        """
+        d_loss_flatten_input = d_loss_flatten_out.reshape(self.input_shape)
+        return d_loss_flatten_input
+
 
 def softmax(x: np.ndarray) -> np.ndarray:
     """Compute softmax values for each sets of scores in x."""
@@ -156,12 +259,31 @@ class Dense:
     def __init__(self, in_features, out_features):
         self.weights = np.random.randn(out_features, in_features) * 0.01
         self.biases = np.zeros(out_features)
+        self.input: np.ndarray = np.array([])
+        self.output: np.ndarray = np.array([])
 
-    def forward(self, x):
+    def forward(self, x: np.ndarray) -> np.ndarray:
         self.input = x
         z = x @ self.weights.T + self.biases
         self.output = softmax(z)
         return self.output
 
-    def backward(self):
-        pass
+    def backward(self, d_loss_z: np.ndarray, learning_rate: float) -> np.ndarray:
+        """
+        Parameters:
+            d_loss_z: Derivative of the loss w.r.t. the pre-softmax activations (z).
+                      Shape: (N, out_features)
+            learning_rate: Learning rate for parameter updates.
+
+        Returns:
+            d_loss_input: Derivative of the loss w.r.t. the input of this layer.
+                          Shape: (N, in_features)
+        """
+        d_loss_w = d_loss_z.T @ self.input
+        d_loss_b = np.sum(d_loss_z, axis=0)
+        d_loss_input = d_loss_z @ self.weights
+
+        self.weights -= learning_rate * d_loss_w
+        self.biases -= learning_rate * d_loss_b
+
+        return d_loss_input
