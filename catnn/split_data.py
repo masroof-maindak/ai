@@ -8,8 +8,8 @@ PROCESSED_DIR = "processed_images"
 TRAIN_LIST_PATH = "train_data.json"
 TEST_LIST_PATH = "test_data.json"
 
-SPLIT_RATIO = 0.75
 MAX_IMAGES_PER_CLASS = 100
+SPLIT_RATIO = 0.70  # Fraction of the prior images to be used for training
 
 
 def extract_class_from_filename(filename):
