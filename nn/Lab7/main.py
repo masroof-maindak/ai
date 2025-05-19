@@ -74,7 +74,7 @@ class NeuralNetwork:
 
     # https://youtu.be/YG15m2VwSjA?feature=shared
     # https://youtu.be/tIeHLnjs5U8?feature=shared
-    def _back_propagation(self, X, y_real, alpha):
+    def _back_propagation(self, X, y_real: list[int], alpha: float):
         m: int = X.shape[0]  # NUM_SAMPLES
 
         # Any layer's output is defined by three things. The prior layer's
