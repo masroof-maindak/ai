@@ -1,4 +1,6 @@
+from functools import wraps
 import json
+import time
 
 from preprocess import TARGET_H, TARGET_W
 from split_data import TRAIN_LIST_PATH, TEST_LIST_PATH
@@ -30,5 +32,19 @@ def load_dataset():
 
     X_train, y_train = load_images_and_labels(train_list, "train list")
     X_test, y_test = load_images_and_labels(test_list, "test list")
-    
+
     return X_train, y_train, X_test, y_test
+
+
+def timer(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(
+            f"Function {func.__name__} took {end_time - start_time:.6f} seconds to execute."
+        )
+        return result
+
+    return wrapper
