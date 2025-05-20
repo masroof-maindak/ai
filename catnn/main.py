@@ -14,8 +14,9 @@ def main():
     cnn = ShrimpleCNN()
     cnn.train(X_train, y_train, epochs=10)
     y_pred = cnn.predict(X_test)
-    accuracy: float = np.mean(y_pred == np.array(y_test))
-    print(accuracy)
+    accuracy: np.float64 = np.mean(y_pred == np.array(y_test))
+    print(f"[ ACCURACY ] {accuracy:.4f}%")
+
 
 if __name__ == "__main__":
     main()

@@ -1,9 +1,11 @@
-import numpy as np
+from typing import final
 
 from layers import Conv2D, ReLU, MaxPool2D, Flatten, Dense
 from losses import cross_entropy_loss
 
-from typing import final
+import numpy as np
+from numpy.typing import NDArray
+
 
 CLASS_MAP = {"Abyssinian": 0, "Bengal": 1, "Bombay": 2, "Egyptian": 3, "Russian": 4}
 
@@ -21,7 +23,7 @@ class ShrimpleCNN:
         self.fccn = Dense(in_features=4 * 79 * 79, out_features=len(CLASS_MAP))
         # Shape = N, 5
 
-    def forward(self, X):
+    def forward(self, X: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Forward pass of the model.
 
@@ -39,7 +41,12 @@ class ShrimpleCNN:
         probs = self.fccn.forward(X)
         return probs
 
-    def backward(self, d_loss_dense_z, learning_rate: float):
+    def backward(self, y_pred_probs, y_one_hot, learning_rate: float) -> None:
+        N = y_pred_probs.shape[0]
+
+        # Elegant evaluation of dL/dZ when Softmax is used w/ Cross-Entropy Loss
+        d_loss_dense_z = (y_pred_probs - y_one_hot) / N
+
         d_loss_flatten_output = self.fccn.backward(d_loss_dense_z, learning_rate)
         d_loss_pool_output = self.flatten.backward(d_loss_flatten_output)
         d_loss_relu_output = self.pool.backward(d_loss_pool_output)
@@ -47,7 +54,11 @@ class ShrimpleCNN:
         _ = self.conv.backward(d_loss_conv_output, learning_rate)
 
     def train(
-        self, X, y: list[str], epochs: int = 1000, learning_rate: float = 0.05
+        self,
+        X: NDArray[np.float32],
+        y: list[str],
+        epochs: int = 1000,
+        learning_rate: float = 0.05,
     ) -> None:
         """
         Train the model on the given data.
@@ -59,12 +70,12 @@ class ShrimpleCNN:
             learning_rate: The learning rate.
         """
 
-        y_indices = np.array([CLASS_MAP[label] for label in y])
+        y_indices: NDArray[np.int8] = np.array([CLASS_MAP[label] for label in y])
         N = X.shape[0]
         num_classes = len(CLASS_MAP)
 
         for epoch in range(epochs + 1):
-            y_pred_probs = self.forward(X)
+            y_pred_probs: NDArray[np.float32] = self.forward(X)
 
             # --- One-Hot Encoding ---
 
@@ -75,20 +86,14 @@ class ShrimpleCNN:
 
             loss = cross_entropy_loss(y_one_hot, y_pred_probs)
 
-            # --- Backpropagation ---
+            self.backward(y_pred_probs, y_one_hot, learning_rate)
 
-            # Elegant evaluation of dL/dZ when Softmax is used w/ Cross-Entropy Loss
-            d_loss_dense_z = (y_pred_probs - y_one_hot) / N
-
-            self.backward(d_loss_dense_z, learning_rate)
-
-            return
             if epoch % 10 == 0:
                 predictions_indices = np.argmax(y_pred_probs, axis=1)
                 accuracy = np.mean(predictions_indices == y_indices)
                 print(f"Epoch {epoch}, Loss: {loss:.4f}, Accuracy: {accuracy:.4f}")
 
-    def predict(self, X):
+    def predict(self, X: NDArray[np.float32]):
         """
         Predict the class of the given data.
 

@@ -1,6 +1,7 @@
 from typing import final
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 @final
@@ -15,15 +16,15 @@ class Conv2D:
         self.kernels = (
             np.random.randn(kernel_size, kernel_size, in_channels, out_channels) * 0.01
         )
-        self.d_loss_kernels: np.ndarray = np.zeros_like(self.kernels)
+        self.d_loss_kernels = np.zeros_like(self.kernels)
 
         self.stride = 1
 
         # Padding = 0
 
-        self.input: np.ndarray = np.array([])
+        self.input: NDArray[np.float32] = np.array([])
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float64]:
         """
         Performs the forward pass of a 2D convolution.
 
@@ -64,8 +65,8 @@ class Conv2D:
         return output
 
     def backward(
-        self, d_loss_conv_output: np.ndarray, learning_rate: float
-    ) -> np.ndarray:
+        self, d_loss_conv_output: NDArray[np.float32], learning_rate: float
+    ) -> NDArray[np.float32]:
         """
         Performs the backward pass for the Conv2D layer.
         Updates kernel weights and computes the derivative of the loss w.r.t. the input.
@@ -79,7 +80,7 @@ class Conv2D:
             d_loss_conv_input: Derivative of the loss w.r.t. the input of this Conv layer.
                                Shape: (N, H_in, W_in, C_in)
         """
-        N, H_in, W_in, _ = self.input.shape
+        N, _, _, _ = self.input.shape
         _, out_rows, out_cols, _ = d_loss_conv_output.shape
 
         d_loss_conv_input = np.zeros_like(self.input)
@@ -97,7 +98,9 @@ class Conv2D:
 
                         patch = self.input[i, start_row:end_row, start_col:end_col, :]
 
-                        d_loss_conv_out_single = d_loss_conv_output[i, row, col, c]
+                        d_loss_conv_out_single: NDArray[np.float32] = (
+                            d_loss_conv_output[i, row, col, c]
+                        )
 
                         # What do we want to find?
                         # How much a specific kernel contributed to a specific output element (pixel)
@@ -128,13 +131,13 @@ class Conv2D:
 @final
 class ReLU:
     def __init__(self):
-        self.input: np.ndarray = np.array([])
+        self.input: NDArray[np.float32] = np.array([])
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
         self.input = x
         return np.maximum(0, x)
 
-    def backward(self, d_loss_relu_output: np.ndarray) -> np.ndarray:
+    def backward(self, d_loss_relu_output: NDArray[np.float32]) -> NDArray[np.float32]:
         d_loss_relu_input = d_loss_relu_output * (self.input > 0)
         return d_loss_relu_input
 
@@ -144,9 +147,9 @@ class MaxPool2D:
     def __init__(self, size: int = 2, stride: int = 2):
         self.size = size
         self.stride = stride
-        self.input: np.ndarray = np.array([])
+        self.input: NDArray[np.float32] = np.array([])
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float64]:
         """
         Performs the forward pass of a 2D max pooling operation.
 
@@ -186,7 +189,9 @@ class MaxPool2D:
 
         return output
 
-    def backward(self, d_loss_maxpool_output: np.ndarray) -> np.ndarray:
+    def backward(
+        self, d_loss_maxpool_output: NDArray[np.float32]
+    ) -> NDArray[np.float32]:
         """
         Intuition: only alter the value that was selected and propagated forward in the first place,
         i.e the maximum, because only it could affect the outcome anyway.
@@ -223,9 +228,9 @@ class MaxPool2D:
 @final
 class Flatten:
     def __init__(self):
-        self.input_shape: tuple
+        self.input_shape: tuple[int, ...] = tuple()
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Flattens the input tensor, preserving the batch size.
 
@@ -240,7 +245,7 @@ class Flatten:
         output = x.reshape(x.shape[0], -1)
         return output
 
-    def backward(self, d_loss_flatten_out: np.ndarray) -> np.ndarray:
+    def backward(self, d_loss_flatten_out: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Basically just reshapes the output to the shape it received
         """
@@ -248,27 +253,31 @@ class Flatten:
         return d_loss_flatten_input
 
 
-def softmax(x: np.ndarray) -> np.ndarray:
+def softmax(X: NDArray[np.float32]) -> NDArray[np.float32]:
     """Compute softmax values for each sets of scores in x."""
-    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+    e_x = np.exp(X - np.max(X, axis=1, keepdims=True))
     return e_x / np.sum(e_x, axis=1, keepdims=True)
 
 
 @final
 class Dense:
-    def __init__(self, in_features, out_features):
-        self.weights = np.random.randn(out_features, in_features) * 0.01
-        self.biases = np.zeros(out_features)
-        self.input: np.ndarray = np.array([])
-        self.output: np.ndarray = np.array([])
+    def __init__(self, in_features: int, out_features: int) -> None:
+        self.weights: NDArray[np.float64] = (
+            np.random.randn(out_features, in_features) * 0.01
+        )
+        self.biases: NDArray[np.float64] = np.zeros(out_features)
+        self.input: NDArray[np.float32] = np.array([])
+        self.output: NDArray[np.float32] = np.array([])
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
         self.input = x
         z = x @ self.weights.T + self.biases
         self.output = softmax(z)
         return self.output
 
-    def backward(self, d_loss_z: np.ndarray, learning_rate: float) -> np.ndarray:
+    def backward(
+        self, d_loss_z: NDArray[np.float32], learning_rate: float
+    ) -> NDArray[np.float64]:
         """
         Parameters:
             d_loss_z: Derivative of the loss w.r.t. the pre-softmax activations (z).
