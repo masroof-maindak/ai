@@ -12,7 +12,7 @@ def main():
     X_train, y_train, X_test, y_test = load_dataset()
 
     cnn = ShrimpleCNN()
-    cnn.train(X_train, y_train, epochs=10)
+    cnn.train(X_train, y_train, epochs=50)
     y_pred = cnn.predict(X_test)
     accuracy: np.float64 = np.mean(y_pred == np.array(y_test))
     print(f"[ ACCURACY ] {accuracy:.4f}%")

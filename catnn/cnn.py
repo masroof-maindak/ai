@@ -13,14 +13,15 @@ CLASS_MAP = {"Abyssinian": 0, "Bengal": 1, "Bombay": 2, "Egyptian": 3, "Russian"
 @final
 class ShrimpleCNN:
     def __init__(self):
-        # Shape = N, 160, 160, 3
-        self.conv = Conv2D(in_channels=3, out_channels=4, kernel_size=3)
+        # Shape = N, 120, 120, 3
+        self.conv = Conv2D(in_channels=3, out_channels=8, kernel_size=3)
+        # N, 118, 118, 8
         self.relu = ReLU()
         self.pool = MaxPool2D(size=2, stride=2)
-        # Shape = N, 79, 79, 4
+        # Shape = N, 59, 59, 8
         self.flatten = Flatten()
-        # Shape = N, 79 * 79 * 4
-        self.fccn = Dense(in_features=4 * 79 * 79, out_features=len(CLASS_MAP))
+        # Shape = N, 59 * 59 * 8
+        self.fccn = Dense(in_features=8 * 59 * 59, out_features=len(CLASS_MAP))
         # Shape = N, 5
 
     def forward(self, X: NDArray[np.float32]) -> NDArray[np.float32]:
@@ -88,9 +89,9 @@ class ShrimpleCNN:
 
             self.backward(y_pred_probs, y_one_hot, learning_rate)
 
-            if epoch % 10 == 0:
-                predictions_indices = np.argmax(y_pred_probs, axis=1)
-                accuracy = np.mean(predictions_indices == y_indices)
+            if epoch % 5 == 0:
+                pred_indices = np.argmax(y_pred_probs, axis=1)
+                accuracy = np.mean(pred_indices == y_indices)
                 print(f"Epoch {epoch}, Loss: {loss:.4f}, Accuracy: {accuracy:.4f}")
 
     def predict(self, X: NDArray[np.float32]):
