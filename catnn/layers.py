@@ -1,11 +1,13 @@
 from typing import final
 
+from utils import timer
+
 import numpy as np
 from numpy.typing import NDArray
 
 
 @final
-class Conv2D:
+class LegacyConv2D:
     def __init__(
         self, in_channels: int = 3, out_channels: int = 4, kernel_size: int = 3
     ):
@@ -24,6 +26,7 @@ class Conv2D:
 
         self.input: NDArray[np.float32] = np.array([])
 
+    @timer
     def forward(self, x: NDArray[np.float32]) -> NDArray[np.float64]:
         """
         Performs the forward pass of a 2D convolution.
@@ -51,19 +54,20 @@ class Conv2D:
             for c in range(self.out_channels):
                 kernel = self.kernels[:, :, :, c]  # Shape: K, K, C_in
 
-                for row_idx in range(out_rows):
-                    start_row = row_idx * self.stride
+                for row in range(out_rows):
+                    start_row = row * self.stride
                     end_row = start_row + self.kernel_size
 
-                    for col_idx in range(out_cols):
-                        start_col = col_idx * self.stride
+                    for col in range(out_cols):
+                        start_col = col * self.stride
                         end_col = start_col + self.kernel_size
 
                         patch = x[i, start_row:end_row, start_col:end_col, :]
-                        output[i, row_idx, col_idx, c] = np.sum(patch * kernel)
+                        output[i, row, col, c] = np.sum(patch * kernel)
 
         return output
 
+    @timer
     def backward(
         self, d_loss_conv_output: NDArray[np.float32], learning_rate: float
     ) -> NDArray[np.float32]:
@@ -129,6 +133,109 @@ class Conv2D:
 
 
 @final
+class Conv2D:
+    def __init__(
+        self, in_channels: int = 3, out_channels: int = 4, kernel_size: int = 3
+    ):
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.stride = 1
+
+        self.kernels = (
+            np.random.randn(kernel_size, kernel_size, in_channels, out_channels) * 0.01
+        )
+        self.biases = np.zeros(out_channels)
+
+        self.input: NDArray[np.float32] = np.array([])
+
+    def _im2col(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
+        N, H, W, C = x.shape
+        out_rows = (H - self.kernel_size) // self.stride + 1
+        out_cols = (W - self.kernel_size) // self.stride + 1
+
+        cols = np.zeros(
+            (N, out_rows, out_cols, self.kernel_size, self.kernel_size, C),
+            dtype=np.float32,
+        )
+
+        for i in range(self.kernel_size):
+            for j in range(self.kernel_size):
+                cols[:, :, :, i, j, :] = x[:, i : i + out_rows, j : j + out_cols, :]
+
+        return cols.reshape(
+            N * out_rows * out_cols, self.kernel_size * self.kernel_size * C
+        )
+
+    def _col2im(
+        self, dcols: NDArray[np.float32], x_shape: tuple[int, int, int, int]
+    ) -> NDArray[np.float32]:
+        N, H, W, C = x_shape
+        out_rows = (H - self.kernel_size) // self.stride + 1
+        out_cols = (W - self.kernel_size) // self.stride + 1
+
+        dx = np.zeros((N, H, W, C), dtype=np.float32)
+        dcols_reshaped = dcols.reshape(
+            N, out_rows, out_cols, self.kernel_size, self.kernel_size, C
+        )
+
+        for i in range(self.kernel_size):
+            for j in range(self.kernel_size):
+                dx[:, i : i + out_rows, j : j + out_cols, :] += dcols_reshaped[
+                    :, :, :, i, j, :
+                ]
+
+        return dx
+
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
+        self.input = x
+        N, H, W, C = x.shape
+        self.kernel_size, self.kernel_size = self.kernel_size, self.kernel_size
+        out_rows = (H - self.kernel_size) // self.stride + 1
+        out_cols = (W - self.kernel_size) // self.stride + 1
+
+        x_cols = self._im2col(
+            x
+        )  # Shape: (N*OH*OW, self.kernel_size*self.kernel_size*C)
+        w_col = self.kernels.reshape(
+            self.kernel_size * self.kernel_size * C, self.out_channels
+        )  # Shape: (self.kernel_size*self.kernel_size*C, OC)
+
+        out = x_cols @ w_col + self.biases  # Shape: (N*OH*OW, OC)
+        out = out.reshape(N, out_rows, out_cols, self.out_channels)
+        return out.astype(np.float32)
+
+    def backward(
+        self, d_out: NDArray[np.float32], learning_rate: float
+    ) -> NDArray[np.float32]:
+        N, H, W, C = self.input.shape
+        self.kernel_size, self.kernel_size = self.kernel_size, self.kernel_size
+        OH = (H - self.kernel_size) // self.stride + 1
+        OW = (W - self.kernel_size) // self.stride + 1
+
+        x_cols = self._im2col(self.input)
+        d_out_flat = d_out.reshape(N * OH * OW, self.out_channels)
+
+        w_col = self.kernels.reshape(
+            self.kernel_size * self.kernel_size * C, self.out_channels
+        )
+
+        dW = x_cols.T @ d_out_flat
+        db = np.sum(d_out_flat, axis=0)
+
+        dx_cols = (
+            d_out_flat @ w_col.T
+        )  # Shape: (N*OH*OW, self.kernel_size*self.kernel_size*C)
+        dx = self._col2im(dx_cols, self.input.shape)
+
+        # Update weights
+        self.kernels -= learning_rate * dW.reshape(self.kernels.shape)
+        self.biases -= learning_rate * db
+
+        return dx
+
+
+@final
 class ReLU:
     def __init__(self):
         self.input: NDArray[np.float32] = np.array([])
@@ -143,12 +250,13 @@ class ReLU:
 
 
 @final
-class MaxPool2D:
+class LegacyMaxPool2D:
     def __init__(self, size: int = 2, stride: int = 2):
         self.size = size
         self.stride = stride
         self.input: NDArray[np.float32] = np.array([])
 
+    @timer
     def forward(self, x: NDArray[np.float32]) -> NDArray[np.float64]:
         """
         Performs the forward pass of a 2D max pooling operation.
@@ -189,6 +297,7 @@ class MaxPool2D:
 
         return output
 
+    @timer
     def backward(
         self, d_loss_maxpool_output: NDArray[np.float32]
     ) -> NDArray[np.float32]:
@@ -223,6 +332,67 @@ class MaxPool2D:
                             i, start_row:end_row, start_col:end_col, c
                         ] += (mask * d_loss_maxpool_output[i, row, col, c])
         return d_loss_maxpool_input
+
+
+@final
+class MaxPool2D:
+    def __init__(self, size: int = 2, stride: int = 2):
+        self.size = size
+        self.stride = stride
+        self.input: NDArray[np.float32] = np.array([])
+        self.mask: NDArray[np.bool_] = np.array([])
+
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
+        self.input = x
+        N, H, W, C = x.shape
+        pool_size = self.size
+        stride = self.stride
+
+        out_h = (H - pool_size) // stride + 1
+        out_w = (W - pool_size) // stride + 1
+
+        x_reshaped = np.lib.stride_tricks.sliding_window_view(
+            x, (pool_size, pool_size), axis=(1, 2)
+        )[::, ::stride, ::stride, ::]
+
+        # Shape becomes: (N, OH, OW, PH, PW, C)
+        x_reshaped = x_reshaped.reshape(N, out_h, out_w, pool_size * pool_size, C)
+        out = np.max(x_reshaped, axis=3)
+
+        # Save mask for backward
+        max_mask = x_reshaped == out[:, :, :, None, :]
+        self.mask = max_mask.reshape(N, out_h, out_w, pool_size, pool_size, C)
+
+        return out
+
+    def backward(self, d_out: NDArray[np.float32]) -> NDArray[np.float32]:
+        N, H, W, C = self.input.shape
+        pool_size = self.size
+        stride = self.stride
+
+        out_h = (H - pool_size) // stride + 1
+        out_w = (W - pool_size) // stride + 1
+
+        d_input = np.zeros_like(self.input)
+
+        # Broadcast gradients to where max was selected
+        d_out_expanded = d_out[:, :, :, None, None, :]
+        d_out_expanded = np.tile(d_out_expanded, (1, 1, 1, pool_size, pool_size, 1))
+
+        grads = d_out_expanded * self.mask  # Only the max locations get the gradient
+
+        for i in range(out_h):
+            for j in range(out_w):
+                row_start = i * stride
+                row_end = row_start + pool_size
+                col_start = j * stride
+                col_end = col_start + pool_size
+
+                d_input[:, row_start:row_end, col_start:col_end, :] += grads[
+                    :, i, j, :, :, :
+                ]
+
+        return d_input.astype(np.float32)
 
 
 @final

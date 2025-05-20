@@ -35,6 +35,9 @@ class ShrimpleCNN:
             Pre-activations
         """
 
+        # Observation: relu, flatten, and the fccn are essentially free in terms of CPU
+        # The Conv2D and MaxPool2D layers are eating up a shit ton of time though...
+
         X = self.conv.forward(X)
         X = self.relu.forward(X)
         X = self.pool.forward(X)
@@ -59,7 +62,7 @@ class ShrimpleCNN:
         X: NDArray[np.float32],
         y: list[str],
         epochs: int = 1000,
-        learning_rate: float = 0.05,
+        learning_rate: float = 0.001,
     ) -> None:
         """
         Train the model on the given data.
