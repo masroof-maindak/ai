@@ -20,6 +20,12 @@ uv sync
 uv run main.py
 ```
 
+# Observations
+
+- The accuracy is kind of mid largely because of the architecture I believe. The layers themselves should be fine.
+- Runs reasonably snappy after optimising the MaxPool2D and Convolution layers and removing the naive, raw-dogged implementations
+- Accuracy caps out around 50% and I suspect this to be because the model picks up all the easy-to-learn features; I could experiment w/ a slightly deeper architecture and more diverse image preprocessing (I primarily had random rotations in mind)
+
 # Acknowledgements
 
 ## Dataset
