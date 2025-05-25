@@ -423,6 +423,30 @@ class Flatten:
         return d_loss_flatten_input
 
 
+@final
+class Dropout:
+    def __init__(self, dropout_rate: float = 0.25):
+        self.rate = dropout_rate
+        self.mask: NDArray[np.float32] = np.array([])
+        self.training = True
+
+    def forward(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
+        if self.training:
+            self.mask = (np.random.rand(*x.shape) > self.rate).astype(np.float32)
+            return x * self.mask / (1.0 - self.rate)  # Inverted dropout
+        else:
+            return x
+
+    def backward(self, d_out: NDArray[np.float32]) -> NDArray[np.float32]:
+        return d_out * self.mask / (1.0 - self.rate)
+
+    def train(self):
+        self.training = True
+
+    def eval(self):
+        self.training = False
+
+
 def softmax(X: NDArray[np.float32]) -> NDArray[np.float32]:
     """Compute softmax values for each sets of scores in x."""
     e_x = np.exp(X - np.max(X, axis=1, keepdims=True))
@@ -437,13 +461,11 @@ class Dense:
         )
         self.biases: NDArray[np.float64] = np.zeros(out_features)
         self.input: NDArray[np.float32] = np.array([])
-        self.output: NDArray[np.float32] = np.array([])
 
     def forward(self, x: NDArray[np.float32]) -> NDArray[np.float32]:
         self.input = x
         z = x @ self.weights.T + self.biases
-        self.output = softmax(z)
-        return self.output
+        return z
 
     def backward(
         self, d_loss_z: NDArray[np.float32], learning_rate: float
