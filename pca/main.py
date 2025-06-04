@@ -13,7 +13,6 @@ n_samples, n_features = X.shape
 
 
 def main():
-
     # --- STANDARDIZING DATA ---
 
     """
@@ -84,7 +83,8 @@ def main():
     matrix transformation, corresponds to the magnitude of variance
     along the aforementioned directions.
 
-    Takeaway: cov mat eigenvec = direction of spread in data
+    Takeaway: cov mat eigenvec = direction of data that has the maximum spread
+    How?
     """
 
     eigenvalues, eigenvectors = np.linalg.eig(covariance_mat)
@@ -106,6 +106,7 @@ def main():
     # Project the data onto the top `k` principal components
     # thereby effectively maintaining the corresponding % of data.
     X_pca = X_std @ top_k_eigenvectors
+    _ = X_pca
 
     # --- EXPLAINED VARIANCE RATIO ---
 
@@ -115,7 +116,7 @@ def main():
     print(f"{explained_var_ratio} -- Explained variance ratio per component")
     print(f"{cum_explained_var} -- Cumulative explained variance")
     print()
-    print(f"Variance retained by top {k} components -- {cum_explained_var[k-1]:.2f}")
+    print(f"Variance retained by top {k} components -- {cum_explained_var[k - 1]:.2f}")
 
 
 if __name__ == "__main__":
