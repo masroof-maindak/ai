@@ -45,3 +45,19 @@ uv run main.py
 - [Explained Visually - Image Kernels](https://setosa.io/ev/image-kernels/)
 - [Better Explained - Convolution](https://betterexplained.com/articles/intuitive-convolution/)
 - [Wikipedia - Kernel (Image Processing)](https://en.wikipedia.org/wiki/Kernel_(image_processing))
+
+## Questions
+
+#### Q1. How does `im2col` work?
+
+#### Q2. What is convolution accomplishing, intuitively?
+
+- Linked to Signal Theory - generally an engineering requirement moreso than a Computer Science one
+- Fourier series comes in: claims to be able to present any periodic function as a sum of Sine waves
+- Extension to Fourier series: Fourier transform -> applies to non-periodic functions too
+    - These are also called basis functions, as their amalgamation leads to a new signal
+    - Shifting from a 'time-domain' to a frequency domain and vice-versa is where we can derive the convolution operator
+    - When we chip off higher frequencies in a frequency domain (low-pass filter), and project it back to a time-domain, it accomplishes the effect of **smoothing** the graph
+    - This act of 'chopping' (low-pass/high-pass/band-pass filters) is effectively a multiplication w/ another signal
+    - This **multiplication of signals in the frequency domain** is equivalent to the **convolution of said frequency graphs' projections in the time domain**
+    - Refer to **Signal & Systems** by _Oppenheim, Wilski_ -- Chapter 4.4 & 4.5
