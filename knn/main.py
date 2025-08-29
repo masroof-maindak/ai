@@ -66,7 +66,9 @@ Retrospective: I merely *understood* how the aforementioned works.
 Q: All I did How could *I* have derived it on my own,
    without the answer being handed on a silver platter?
    TODO: Discuss w/ Mudassir.
->> 
+>> I forgot what he said, but the core idea was that if we span out vectors from the origin of a
+   circle towards its infinitude of sides, we will observe that the vectors preserve their direction
+   across different values of `p` -- the same can not be said for their magnitude.
 """
 
 print("Accuracy:", accuracy_score(y_test, y_pred))
@@ -91,13 +93,33 @@ def get_k_neighbors(x_train, y_train, test_sample, k):
         raise ValueError("Number of features & labels is unequal!")
 
     # Calculate distance from test sample to all training samples
+    # Time Complexity: n * k * d
     dists = []
     for i in range(len(x_train)):
         dists.append((euclidean_distance_4d(x_train[i], test_sample), y_train[i]))
 
     # Sort first `k` based on distance
+    # Time Complexity: n
     partially_sorted = nsmallest(k, dists, key=lambda dist: dist[0])
     return partially_sorted
+
+
+"""
+As we spread out into higher and higher dimensions, the average distance
+b/w points is going to increase. E.g on a line from 0 to 1, the max distance is 1.
+
+In a square, the max distance is 1.41 (sqrt(2)).
+
+This can be extrapolated to any number of dimensions.
+
+HOWEVER, the DEVIATION from the average distance goes down.
+
+---
+
+This may lead to KNN being dogshit when the dimensionality is high. One point in
+particular may be uselessly far away from everyone else, and thus pulls a lot
+of other points in.
+"""
 
 
 def predict_classification(x_train, y_train, test_sample, k):
