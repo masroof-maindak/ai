@@ -90,7 +90,8 @@ class NeuralNetwork:
 
         # derivative of loss function i.e cost w.r.t activations of final layer
         d_loss_a2 = loss_fns.bce_deriv(self.a2.flatten(), y_real).reshape(
-            -1, 1  # convert the response from a list back to a column vector
+            -1,
+            1,  # convert the response from a list back to a column vector
         )
 
         # derivative of a2 w.r.t z2 -> NUM_SAMPLES x 1
@@ -123,7 +124,7 @@ class NeuralNetwork:
         # --- HIDDEN LAYER ---
 
         # Chain rule
-        d_loss_a1 = delta2 @ self.W2.T  # CHECK: what's going on here?
+        d_loss_a1 = delta2 @ self.W2.T
         d_a1_z1 = actvns.relu(self.Z1, derivative=True)
         d_z1_W1 = X.T
 

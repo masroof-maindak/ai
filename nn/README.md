@@ -3,7 +3,7 @@
 - [x] Lab 7 is well-annotated and ideal for studying.
 - [x] Asg 6 was created after lab 7 and is the dumbed down version of it
 - [ ] [ **wontfix** ] Lab 8 adds nothing to Lab 7 other than regular dropout, hence the AI slop
-- [ ] [ **wontfix** ] Lab 9 adds nothing to Lab 7 other than extending it from a binary classifier to a generic classifier. Shouldn't require much modification other than changing the activation function and other dataset-specific dictionary maintenance -- Softmax?
+- [ ] [ **wontfix** ] Lab 9 adds nothing to Lab 7 other than extending it from a binary classifier to a generic classifier. Shouldn't require much modification other than changing the activation function to Softmax
 
 ## Questions
 
@@ -16,14 +16,27 @@
 - Furthermore, when the model does predict probabilities close to 0 or 1, the cost function's gradient (derivative) becomes very small, making it harder to correct mistakes, thereby slowing down learning. Conversely, When the true label is y=1, cross-entropy encourages the prediction `y_hat` to be as close to 1 as possible by minimizing `−log(y_hat)`.
 - Lastly, cross-entropy promises a convex loss surface, whereas MSE would create a non-convex surface. This translates to the presence of multiple local minima, making it difficult for the gradient descent algorithm to find the global optimum.
 - Sources:
-    - [Deeplearning.ai - paulinpaloalto](https://community.deeplearning.ai/t/mse-cost-function/23349/2)
-    - [deeplearning.ai - nadtriana](https://community.deeplearning.ai/t/use-of-squared-error-with-sigmoid-and-applying-gradient-descent/700239/2)
+    - [DeepLearning.ai - paulinpaloalto](https://community.deeplearning.ai/t/mse-cost-function/23349/2)
+    - [DeepLearning.ai - nadtriana](https://community.deeplearning.ai/t/use-of-squared-error-with-sigmoid-and-applying-gradient-descent/700239/2)
 - TODO:
     - Read entropy from DeepLearning book
 
-#### Q2. How is the derivative of the 'loss' (or equivalent) w.r.t AL (for any layer prior to the final layer) equal to `delta2 @ self.W[L+1].T`
+#### Q2. How is the derivative of the 'loss' (or equivalent) w.r.t A_L (for any layer prior to the final layer) equal to `delta2 @ self.W[L+1].T`
 
-#### Q3. How does the derivative of BCE+Sigmoid/CE+Softmax applied on a layer during back-prop simplify to such an elegant expression?
+- I see the light after Dr Mudassir's lecture on back-prop
+
+#### Q3. How does the derivative of BCE+Sigmoid applied on a layer during back-prop simplify to such an elegant expression?
+
+- I see the light after Dr Mudassir's lecture on back-prop
+- First, let us define pd(x,y) as 'the partial derivative of x w.r.t y'
+- We know that `pd(L,z) = pd(L,a) * pd(a,z)` where `z` refers to the pre-activations of the output layer, `a` refers to the predictions, i.e activations, i.e `y_hat`.
+- `pd(L,a)` is shrimple. It is only the partial derivative of the binary cross-entropy loss w.r.t `y_hat`
+- Recall that BCE is shrimply `y log(y_hat) + (1-y) log(1-y_hat)`
+- Taking the derivative of the aforementioned is trivially equal to `y - y_hat`
+- Next, we have `pd(a,z)`. This is quite trivially the derivative of the sigmoid activation function, because `a = sigma(z)`.
+- Hence, solved.
+
+#### Q3. " " " " " CE + Softmax " " " " " " " " " " " " " ?
 
 ---
 
