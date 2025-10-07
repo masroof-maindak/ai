@@ -23,7 +23,20 @@
 
 #### Q2. How is the derivative of the 'loss' (or equivalent) w.r.t A_L (for any layer prior to the final layer) equal to `delta2 @ self.W[L+1].T`
 
-- I see the light after Dr Mudassir's lecture on back-prop
+$$z_1 = xW_1 + b_1$$
+$$h = \sigma(z_1)$$
+$$z_2 = hW_2 + b_2$$
+$$\hat{y} = \sigma(z_2)$$
+$$L = y\log\hat{y} + (1-y)\log(1-\hat{y})$$
+
+```math
+\frac{\partial L}{\partial W_1}
+= \frac{\partial L}{\partial \hat{y}}
+\frac{\partial \hat{y}}{\partial z_2}
+\frac{\partial z_2}{\partial h}
+\frac{\partial h}{\partial z_1}
+\frac{\partial z_1}{\partial W_1}
+```
 
 #### Q3. How does the derivative of BCE+Sigmoid applied on a layer during back-prop simplify to such an elegant expression?
 
