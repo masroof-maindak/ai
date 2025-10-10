@@ -18,8 +18,7 @@
 - Sources:
     - [DeepLearning.ai - paulinpaloalto](https://community.deeplearning.ai/t/mse-cost-function/23349/2)
     - [DeepLearning.ai - nadtriana](https://community.deeplearning.ai/t/use-of-squared-error-with-sigmoid-and-applying-gradient-descent/700239/2)
-- TODO:
-    - Read entropy from DeepLearning book
+    - [x] Todo: Read entropy from DeepLearningBook
 
 #### Q2. How is the derivative of the 'loss' (or equivalent) w.r.t A_L (for any layer prior to the final layer) equal to `delta2 @ self.W[L+1].T`
 
